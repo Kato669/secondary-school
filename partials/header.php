@@ -1,3 +1,4 @@
+<?php include("./constants/constant.php") ?>
 <!doctype html>
 <html lang="en">
   <head>
@@ -64,7 +65,7 @@
             </button>
 
             <div id="studentsMenu" class="hidden flex-col ml-6 mt-1" role="menu" aria-hidden="true">
-              <a href="#" class="block p-2 text-white w-full text-sm hover:bg-[#0f1b33] rounded" role="menuitem">
+              <a href="" class="block p-2 text-white w-full text-sm hover:bg-[#0f1b33] rounded" role="menuitem">
                 <i class="fa-solid fa-plus" aria-hidden="true"></i>
                 Add Student
               </a>
@@ -156,7 +157,7 @@
                 <i class="fa-solid fa-book"></i>
                 Subjects
               </span>
-              <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+              <a href="<?php echo SITEURL; ?>add_subject.php" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
                 <i class="fa-solid fa-plus-circle"></i>
                 <span class="capitalize">add subject</span>
               </a>
@@ -384,6 +385,8 @@
         <!-- Inline JS: consolidated, accessible, and shorter -->
 <script>
   document.addEventListener('DOMContentLoaded', function () {
+    var currentOpenMenu = null; // Track which menu is currently open
+    
     // Generic sidebar toggles: use data-target to find menu and caret (last child)
     document.querySelectorAll('.sidebar-toggle').forEach(function (btn) {
       var targetId = btn.getAttribute('data-target');
@@ -393,12 +396,36 @@
       btn.addEventListener('click', function (e) {
         e.preventDefault();
         var isHidden = menu.classList.contains('hidden');
+        
+        // If there's another menu open, close it
+        if (currentOpenMenu && currentOpenMenu !== menu && !currentOpenMenu.classList.contains('hidden')) {
+          currentOpenMenu.classList.add('hidden');
+          currentOpenMenu.setAttribute('aria-hidden', 'true');
+          // Find and update the caret for the previously open menu
+          var previousBtn = document.querySelector('[data-target="' + currentOpenMenu.id.replace('Menu', '') + 'Menu"]');
+          if (previousBtn) {
+            previousBtn.setAttribute('aria-expanded', 'false');
+            var previousCaret = previousBtn.querySelector('.fa-chevron-down');
+            if (previousCaret) {
+              previousCaret.classList.remove('rotate-180');
+            }
+          }
+        }
+        
+        // Toggle current menu
         menu.classList.toggle('hidden', !isHidden ? true : false);
         menu.setAttribute('aria-hidden', isHidden ? 'false' : 'true');
         btn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
 
         if (caret) {
           caret.classList.toggle('rotate-180', isHidden);
+        }
+        
+        // Update current open menu
+        if (!isHidden) {
+          currentOpenMenu = null; // Menu was closed
+        } else {
+          currentOpenMenu = menu; // Menu was opened
         }
       });
 
