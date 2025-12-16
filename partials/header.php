@@ -219,30 +219,50 @@
               </a>
               <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
                 <i class="fa-solid fa-chalkboard-user"></i>
-                <span class="capitalize">subject teacher</span>
+                <span class="capitalize">Rate Learner Competencies</span>
               </a>
               <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
                 <i class="fa-solid fa-eye"></i>
-                <span class="capitalize">view subject teacher</span>
+                <span class="capitalize">Competency Achievement Levels</span>
+              </a>
+              <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-eye"></i>
+                <span class="capitalize">Competency Summary per Learner</span>
               </a>
             </div>
             <hr>
             <div class="flex flex-col gap-2">
               <span class="uppercase text-blue-900 font-bold tracking-wide">
                 <i class="fa-solid fa-book"></i>
-                continous assessment
+                Learner Projects
               </span>
               <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
                 <i class="fa-solid fa-plus-circle"></i>
-                <span class="capitalize">practical assessment</span>
+                <span class="capitalize">Add Project</span>
               </a>
               <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
                 <i class="fa-solid fa-plus-circle"></i>
-                <span class="capitalize">weekly/monthly assessment</span>
+                <span class="capitalize">Individual Projects</span>
               </a>
               <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
                 <i class="fa-solid fa-chalkboard-user"></i>
-                <span class="capitalize">teacher score</span>
+                <span class="capitalize">Group Projects</span>
+              </a>
+              <!-- <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-chalkboard-user"></i>
+                <span class="capitalize">Group Projects</span>
+              </a> -->
+              <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-chalkboard-user"></i>
+                <span class="capitalize">project rubric</span>
+              </a>
+              <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-chalkboard-user"></i>
+                <span class="capitalize">projects score</span>
+              </a>
+              <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-chalkboard-user"></i>
+                <span class="capitalize">Projects report</span>
               </a>
               
             </div>
