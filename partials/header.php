@@ -271,67 +271,83 @@
             <div class="flex flex-col gap-2">
               <span class="uppercase text-blue-900 font-bold tracking-wide">
                 <i class="fa-solid fa-book"></i>
-                Subjects
+               learning profile
               </span>
               <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
                 <i class="fa-solid fa-plus-circle"></i>
-                <span class="capitalize">add subject</span>
+                <span class="capitalize">academic profile</span>
               </a>
               <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
                 <i class="fa-solid fa-plus-circle"></i>
-                <span class="capitalize">assign subject to class</span>
+                <span class="capitalize">skills and talent profile</span>
               </a>
               <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
                 <i class="fa-solid fa-chalkboard-user"></i>
-                <span class="capitalize">subject teacher</span>
+                <span class="capitalize">behaviour and values</span>
               </a>
               <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
                 <i class="fa-solid fa-eye"></i>
-                <span class="capitalize">view subject teacher</span>
+                <span class="capitalize">career interest</span>
+              </a>
+              <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-eye"></i>
+                <span class="capitalize">teacher observation</span>
               </a>
             </div>
             <hr>
             <div class="flex flex-col gap-2">
               <span class="uppercase text-blue-900 font-bold tracking-wide">
                 <i class="fa-solid fa-book"></i>
-                continous assessment
+                co-curricular activities
               </span>
               <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
                 <i class="fa-solid fa-plus-circle"></i>
-                <span class="capitalize">practical assessment</span>
+                <span class="capitalize">clubs and society</span>
               </a>
               <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
                 <i class="fa-solid fa-plus-circle"></i>
-                <span class="capitalize">weekly/monthly assessment</span>
+                <span class="capitalize">games and sports</span>
               </a>
               <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
                 <i class="fa-solid fa-chalkboard-user"></i>
-                <span class="capitalize">teacher score</span>
+                <span class="capitalize">community service learning</span>
               </a>
+              <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-chalkboard-user"></i>
+                <span class="capitalize">participation records</span>
+              </a>
+              <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-chalkboard-user"></i>
+                <span class="capitalize">activity perfomance</span>
+              <!-- </a>
+              <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-chalkboard-user"></i>
+                <span class="capitalize">community service learning</span>
+              </a> -->
               
             </div>
           </div>
           <div class="w-[1/5]">
             <div class="flex flex-col gap-2">
               <span class="uppercase text-blue-900 font-bold tracking-wide">
-                <i class="fa-solid fa-book"></i>
-                Subjects
+              <i class="fa-solid fa-file"></i>
+                attendance and participation
               </span>
               <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
                 <i class="fa-solid fa-plus-circle"></i>
-                <span class="capitalize">add subject</span>
+                <span class="capitalize">daily attendance</span>
               </a>
               <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
                 <i class="fa-solid fa-plus-circle"></i>
-                <span class="capitalize">assign subject to class</span>
+                <span class="capitalize">lesson attendance</span>
               </a>
               <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
                 <i class="fa-solid fa-chalkboard-user"></i>
-                <span class="capitalize">subject teacher</span>
+                <span class="capitalize">activity attendance</span>
               </a>
               <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
-                <i class="fa-solid fa-eye"></i>
-                <span class="capitalize">view subject teacher</span>
+                <i class="fa-solid fa-file"></i>
+                <span class="capitalize">participation logs</span>
               </a>
             </div>
             <hr>
