@@ -3,3 +3,60 @@
     margin: 0;
     box-sizing: border-box;
 }
+
+/* Dropdown animation utilities */
+.anim-dropdown {
+    transition: opacity 320ms cubic-bezier(.16,.84,.52,1), transform 320ms cubic-bezier(.16,.84,.52,1), max-height 340ms cubic-bezier(.16,.84,.52,1);
+    transform-origin: top;
+    opacity: 0;
+    transform: translateY(-12px) scaleY(0.992);
+    max-height: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+.anim-dropdown.open {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+    max-height: 2000px; /* large value to accommodate content */
+    pointer-events: auto;
+}
+
+/* Small helper to smoothly rotate carets when menus open */
+.rotate-180 {
+    transform: rotate(180deg);
+}
+
+/* Smooth caret rotation for FontAwesome chevrons */
+.fa-chevron-down {
+    transition: transform 320ms cubic-bezier(.16,.84,.52,1);
+}
+
+/* Sidebar collapse styles */
+#mainSidebar {
+    transition: width 320ms cubic-bezier(.16,.84,.52,1);
+    width: 15%;
+}
+#mainSidebar.collapsed {
+    width: 70px !important;
+}
+
+#mainSidebar.collapsed .sidebar-toggle > div {
+    justify-content: center;
+}
+
+#mainSidebar.collapsed .sidebar-toggle > div > span,
+#mainSidebar.collapsed .sidebar-toggle > .fa-chevron-down {
+    display: none !important;
+}
+
+#mainSidebar.collapsed .ml-6 {
+    display: none !important;
+}
+
+#mainContent {
+    transition: width 320ms cubic-bezier(.16,.84,.52,1);
+    width: calc(100% - 15%);
+}
+#mainContent.expanded {
+    width: calc(100% - 70px) !important;
+}
