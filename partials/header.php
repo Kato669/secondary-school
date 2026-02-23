@@ -14,7 +14,7 @@
     <!-- Use root‑relative paths to avoid include-location issues -->
     <link rel="stylesheet" href="/sms/css/styles.css" />
   </head>
-  <body class="bg-[#e5f6e5]">
+  <body class="bg-[#e5f6e5]" style="overflow-x: hidden">
     <div class="flex min-h-screen">
 
       <!-- Sidebar -->
@@ -165,6 +165,12 @@
                 <span>A' level</span>
                 <i id="alevelCaret" class="fa-solid fa-chevron-down text-xs transition-transform duration-200"></i>
               </button>
+              <!-- settings dropdown -->
+              <div class="relative">
+                <button id="settingsToggle" class="capitalize text-black-900 px-3 cursor-pointer flex items-center gap-2 focus:outline-none">
+                  <span>general settings</span>
+                  <i id="settingsCaret" class="fa-solid fa-chevron-down text-xs transition-transform duration-200"></i>
+                </button>
             </div>
           </div>
 
@@ -711,6 +717,124 @@
          </div>
         <!-- dropdowns ends-->
 
+        <!-- General Settings dropdown starts -->
+         <div id="settingsDropdown" class="hidden absolute w-[100%] bg-[#ffffff] flex px-10 py-4 gap-6 text-sm text-gray-800 shadow" style="top: 48px; left: 15%; width: 85%;">
+          <div class="w-[1/4]">
+            <div class="flex flex-col gap-2">
+              <span class="uppercase text-blue-900 font-bold tracking-wide">
+                <i class="fa-solid fa-cog"></i>
+                School Settings
+              </span>
+              <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-building"></i>
+                <span class="capitalize">School Profile</span>
+              </a>
+              <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-calendar"></i>
+                <span class="capitalize">Academic Years & Terms</span>
+              </a>
+              <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-clock"></i>
+                <span class="capitalize">Session / Term Dates</span>
+              </a>
+            </div>
+            <hr>
+            <div class="flex flex-col gap-2">
+              <span class="uppercase text-blue-900 font-bold tracking-wide">
+                <i class="fa-solid fa-user-gear"></i>
+                Users & Access
+              </span>
+              <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-user-plus"></i>
+                <span class="capitalize">Manage Users</span>
+              </a>
+              <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-user-shield"></i>
+                <span class="capitalize">Roles & Permissions</span>
+              </a>
+            </div>
+          </div>
+          <div class="w-[1/4]">
+            <div class="flex flex-col gap-2">
+              <span class="uppercase text-blue-900 font-bold tracking-wide">
+                <i class="fa-solid fa-envelope"></i>
+                Notifications
+              </span>
+              <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-bell"></i>
+                <span class="capitalize">Email / SMS Settings</span>
+              </a>
+              <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-bell-on"></i>
+                <span class="capitalize">Alert Preferences</span>
+              </a>
+            </div>
+            <hr>
+            <div class="flex flex-col gap-2">
+              <span class="uppercase text-blue-900 font-bold tracking-wide">
+                <i class="fa-solid fa-database"></i>
+                Data Management
+              </span>
+              <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-file-import"></i>
+                <span class="capitalize">Import / Export</span>
+              </a>
+              <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-database"></i>
+                <span class="capitalize">Backup & Restore</span>
+              </a>
+            </div>
+          </div>
+          <div class="w-[1/4]">
+            <div class="flex flex-col gap-2">
+              <span class="uppercase text-blue-900 font-bold tracking-wide">
+                <i class="fa-solid fa-file-pen"></i>
+                Exams & Grading
+              </span>
+              <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-pen-to-square"></i>
+                <span class="capitalize">Grading Scales</span>
+              </a>
+              <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-sliders"></i>
+                <span class="capitalize">Exam Settings</span>
+              </a>
+            </div>
+            <hr>
+            <div class="flex flex-col gap-2">
+              <span class="uppercase text-blue-900 font-bold tracking-wide">
+                <i class="fa-solid fa-phone"></i>
+                Contact & Branding
+              </span>
+              <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-address-card"></i>
+                <span class="capitalize">Contact Info</span>
+              </a>
+              <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-palette"></i>
+                <span class="capitalize">Branding / Logo</span>
+              </a>
+            </div>
+          </div>
+          <div class="w-[1/4]">
+            <div class="flex flex-col gap-2">
+              <span class="uppercase text-blue-900 font-bold tracking-wide">
+                <i class="fa-solid fa-shield-alt"></i>
+                Streams
+              </span>
+              <a href="<?php echo SITEURL ?>streams.php" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-file-lines"></i>
+                <span class="capitalize">create streams</span>
+              </a>
+              <!-- <a href="#" class="flex items-center gap-1 text-gray-700 hover:text-blue-900 transition-colors">
+                <i class="fa-solid fa-server"></i>
+                <span class="capitalize">Maintenance Mode</span>
+              </a> -->
+            </div>
+          </div>
+         </div>
+        <!-- General Settings dropdown ends-->
+
         <!-- Inline JS: consolidated, accessible, and shorter -->
         <script>
           document.addEventListener('DOMContentLoaded', function () {
@@ -825,5 +949,6 @@
 
             wireHoverMenu(document.getElementById('olevelToggle'), document.getElementById('olevelDropdown'), document.getElementById('olevelCaret'));
             wireHoverMenu(document.getElementById('alevelToggle'), document.getElementById('alevelDropdown'), document.getElementById('alevelCaret'));
+            wireHoverMenu(document.getElementById('settingsToggle'), document.getElementById('settingsDropdown'), document.getElementById('settingsCaret'));
           });
         </script>

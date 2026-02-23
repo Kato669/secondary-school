@@ -4,6 +4,7 @@
     box-sizing: border-box;
 }
 
+
 /* Dropdown animation utilities */
 .anim-dropdown {
     transition: opacity 320ms cubic-bezier(.16,.84,.52,1), transform 320ms cubic-bezier(.16,.84,.52,1), max-height 340ms cubic-bezier(.16,.84,.52,1);
