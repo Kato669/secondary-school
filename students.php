@@ -1,6 +1,12 @@
 <?php
-include("./partials/header.php");
 session_start();
+include("./partials/header.php");
+
+
+// Check database connection
+if(!isset($conn) || !$conn){
+    die("Database connection failed.");
+}
 
 // Initialize session data if not exists
 if(!isset($_SESSION['student_form'])){
@@ -13,9 +19,6 @@ $success_message = '';
 
 // Handle form navigation and validation
 if($_SERVER['REQUEST_METHOD'] === 'POST'){
-  var_dump($_SERVER['REQUEST_METHOD'] === 'POST');
-  exit();
-    
     // Validate and store Step 1 data
     if(isset($_POST['step_1_submit'])){
         $student_name = isset($_POST['student_name']) ? trim($_POST['student_name']) : '';
@@ -32,7 +35,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
         } else {
             // Store in session
             $_SESSION['student_form']['student_name'] = $student_name;
-            $_SESSION['student_form']['learner_id'] = $learner_id;
+            $_SESSION['student_form']['lin'] = $learner_id; // Store as 'lin' to match database
             $_SESSION['student_form']['dob'] = $dob;
             $_SESSION['student_form']['gender'] = $gender;
             $_SESSION['student_form']['nationality'] = $nationality;
@@ -63,12 +66,14 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
         $phone_2 = isset($_POST['phone_2']) ? trim($_POST['phone_2']) : '';
         $occupation = isset($_POST['occupation']) ? trim($_POST['occupation']) : '';
         $email = isset($_POST['email']) ? trim($_POST['email']) : '';
-        $parent_gender = isset($_POST['parent_gender']) ? trim($_POST['parent_gender']) : '';
+        $parent_gender = isset($_POST['parent_gender']) ? strtoupper(trim($_POST['parent_gender'])) : '';
         $address = isset($_POST['address']) ? trim($_POST['address']) : '';
         
         // Validate
         if(empty($parent_name) || empty($phone_1) || empty($occupation) || empty($address)){
             $errors[] = "Please fill in all required fields in Step 2.";
+        } elseif(!preg_match('/^[+]?[0-9\-\s]{7,}$/', $phone_1)){
+            $errors[] = "Please enter a valid primary phone number.";
         } else {
             $_SESSION['student_form']['parent_name'] = $parent_name;
             $_SESSION['student_form']['phone_1'] = $phone_1;
@@ -85,100 +90,148 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
     // Validate and store Step 3 data
     elseif(isset($_POST['step_3_submit'])){
         $class_id = isset($_POST['class_id']) ? intval($_POST['class_id']) : 0;
-        $stream_id = isset($_POST['stream_id']) ? trim($_POST['stream_id']) : '';
+        $stream_id = isset($_POST['stream_id']) && !empty($_POST['stream_id']) ? intval($_POST['stream_id']) : 0;
         $term = isset($_POST['term']) ? trim($_POST['term']) : '';
         $year_of_study = isset($_POST['year_of_study']) ? intval($_POST['year_of_study']) : 0;
-        $school_pay = isset($_POST['school_pay']) ? floatval($_POST['school_pay']) : 0;
-        $entry_status = isset($_POST['entry_status']) ? trim($_POST['entry_status']) : '';
-        $residence_status = isset($_POST['residence_status']) ? trim($_POST['residence_status']) : '';
+        $school_pay = isset($_POST['school_pay']) && !empty($_POST['school_pay']) ? floatval($_POST['school_pay']) : 0;
+        $entry_status = isset($_POST['entry_status']) ? strtoupper(trim($_POST['entry_status'])) : '';
+        $residence_status = isset($_POST['residence_status']) ? strtoupper(trim($_POST['residence_status'])) : '';
         
+        // Validate required fields
         if($class_id <= 0 || empty($term) || $year_of_study <= 0 || empty($entry_status) || empty($residence_status)){
             $errors[] = "Please fill in all required fields in Step 3.";
         } else {
-            $_SESSION['student_form']['class_id'] = $class_id;
-            $_SESSION['student_form']['stream_id'] = $stream_id;
-            $_SESSION['student_form']['term'] = $term;
-            $_SESSION['student_form']['year_of_study'] = $year_of_study;
-            $_SESSION['student_form']['school_pay'] = $school_pay;
-            $_SESSION['student_form']['entry_status'] = $entry_status;
-            $_SESSION['student_form']['residence_status'] = $residence_status;
-            
-            $currentStep = 4;
+            // Validate enum values
+            if(!in_array($entry_status, ['NEW', 'CONTINUING'])){
+                $errors[] = "Invalid enrollment status selected.";
+            } elseif(!in_array($residence_status, ['DAY', 'BOARDING'])){
+                $errors[] = "Invalid residence status selected.";
+            } else {
+                // Validate class exists in database
+                $classCheck = mysqli_query($conn, "SELECT class_id FROM classes WHERE class_id = $class_id");
+                if(!$classCheck || mysqli_num_rows($classCheck) === 0){
+                    $errors[] = "Invalid class selected.";
+                } elseif($stream_id > 0) {
+                    // Validate stream exists if provided
+                    $streamCheck = mysqli_query($conn, "SELECT stream_id FROM streams WHERE stream_id = $stream_id");
+                    if(!$streamCheck || mysqli_num_rows($streamCheck) === 0){
+                        $errors[] = "Invalid stream selected.";
+                    }
+                }
+                
+                // If validations pass, store in session
+                if(empty($errors)){
+                    $_SESSION['student_form']['class_id'] = $class_id;
+                    $_SESSION['student_form']['stream_id'] = $stream_id;
+                    $_SESSION['student_form']['term'] = $term;
+                    $_SESSION['student_form']['year_of_study'] = $year_of_study;
+                    $_SESSION['student_form']['school_pay'] = $school_pay;
+                    $_SESSION['student_form']['entry_status'] = $entry_status;
+                    $_SESSION['student_form']['residence_status'] = $residence_status;
+                    
+                    $currentStep = 4;
+                }
+            }
         }
     }
-    
+   
     // Final submission
     elseif(isset($_POST['submit_final'])){
         $formData = $_SESSION['student_form'];
         
-        // insert into primary student table
-        $stmt = mysqli_prepare($conn, "INSERT INTO student (student_name, learner_id, dob, gender, nationality, district, entry_date, student_image) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        if($stmt){
+        // Start transaction for data integrity
+        mysqli_begin_transaction($conn);
+        // var_dump($formData);
+        // exit();
+        try {
+            // Insert into students table (core student info)
+            $stmt = mysqli_prepare($conn, "INSERT INTO students (student_name, lin, dob, gender, nationality, district, entry_date, student_image) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            if(!$stmt){
+                throw new Exception("Prepare failed: " . mysqli_error($conn));
+            }
+            
+            $student_image = isset($formData['student_image']) ? $formData['student_image'] : NULL;
+            
             mysqli_stmt_bind_param($stmt, 'ssssssss',
                 $formData['student_name'],
-                $formData['learner_id'],
+                $formData['lin'],
                 $formData['dob'],
                 $formData['gender'],
                 $formData['nationality'],
                 $formData['district'],
                 $formData['entry_date'],
-                $formData['student_image'] ?? ''
+                $student_image
             );
 
-            if(mysqli_stmt_execute($stmt)){
-                $student_id = mysqli_insert_id($conn);
-                mysqli_stmt_close($stmt);
-
-                // parent/guardian table
-                $pStmt = mysqli_prepare($conn, "INSERT INTO student_parent (student_id, parent_name, phone_1, phone_2, occupation, email, gender, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                if($pStmt){
-                    mysqli_stmt_bind_param($pStmt, 'isssssss',
-                        $student_id,
-                        $formData['parent_name'],
-                        $formData['phone_1'],
-                        $formData['phone_2'],
-                        $formData['occupation'],
-                        $formData['email'],
-                        $formData['parent_gender'] ?? '',
-                        $formData['address']
-                    );
-
-                    if(mysqli_stmt_execute($pStmt)){
-                        mysqli_stmt_close($pStmt);
-
-                        // additional information table
-                        $aStmt = mysqli_prepare($conn, "INSERT INTO student_additional_info (student_id, class_id, stream_id, term, year_of_study, school_pay, entry_status, residence_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                        if($aStmt){
-                            mysqli_stmt_bind_param($aStmt, 'iissiiss',
-                                $student_id,
-                                $formData['class_id'],
-                                $formData['stream_id'],
-                                $formData['term'],
-                                $formData['year_of_study'],
-                                $formData['school_pay'],
-                                $formData['entry_status'],
-                                $formData['residence_status']
-                            );
-
-                            if(mysqli_stmt_execute($aStmt)){
-                                mysqli_stmt_close($aStmt);
-                                $success_message = "Student registered successfully!";
-                                unset($_SESSION['student_form']);
-                                $currentStep = 1;
-                            } else {
-                                error_log('Additional info insert error: ' . mysqli_stmt_error($aStmt));
-                                $errors[] = "Error saving additional student information.";
-                            }
-                        }
-                    } else {
-                        error_log('Parent insert error: ' . mysqli_stmt_error($pStmt));
-                        $errors[] = "Error saving parent data.";
-                    }
-                }
-            } else {
-                error_log('Student insert error: ' . mysqli_stmt_error($stmt));
-                $errors[] = "Error saving student data.";
+            if(!mysqli_stmt_execute($stmt)){
+                throw new Exception("Student insert failed: " . mysqli_stmt_error($stmt));
             }
+            
+            $student_id = mysqli_insert_id($conn);
+            mysqli_stmt_close($stmt);
+
+            // Insert into student_parent table (parent/guardian info)
+            $pStmt = mysqli_prepare($conn, "INSERT INTO student_parent (student_id, parent_name, phone_1, phone_2, occupation, email, gender, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            if(!$pStmt){
+                throw new Exception("Prepare failed: " . mysqli_error($conn));
+            }
+            
+            $phone_2 = !empty($formData['phone_2']) ? $formData['phone_2'] : NULL;
+            $email = !empty($formData['email']) ? $formData['email'] : NULL;
+            
+            mysqli_stmt_bind_param($pStmt, 'isssssss',
+                $student_id,
+                $formData['parent_name'],
+                $formData['phone_1'],
+                $phone_2,
+                $formData['occupation'],
+                $email,
+                $formData['parent_gender'],
+                $formData['address']
+            );
+
+            if(!mysqli_stmt_execute($pStmt)){
+                throw new Exception("Parent info insert failed: " . mysqli_stmt_error($pStmt));
+            }
+            mysqli_stmt_close($pStmt);
+
+            // Insert into student_additional_info table (academic info)
+            $aStmt = mysqli_prepare($conn, "INSERT INTO student_additional_info (student_id, class_id, stream_id, term, year_of_study, school_pay, entry_status, residence_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            if(!$aStmt){
+                throw new Exception("Prepare failed: " . mysqli_error($conn));
+            }
+            
+            $stream_id = $formData['stream_id'] > 0 ? $formData['stream_id'] : NULL;
+            $school_pay = $formData['school_pay'] > 0 ? $formData['school_pay'] : NULL;
+            
+            mysqli_stmt_bind_param($aStmt, 'iissiiss',
+                $student_id,
+                $formData['class_id'],
+                $stream_id,
+                $formData['term'],
+                $formData['year_of_study'],
+                $school_pay,
+                $formData['entry_status'],
+                $formData['residence_status']
+            );
+
+            if(!mysqli_stmt_execute($aStmt)){
+                throw new Exception("Additional info insert failed: " . mysqli_stmt_error($aStmt));
+            }
+            mysqli_stmt_close($aStmt);
+            
+            // Commit transaction
+            mysqli_commit($conn);
+            
+            $success_message = "Student registered successfully! Student ID: " . $student_id;
+            unset($_SESSION['student_form']);
+            $currentStep = 1;
+            
+        } catch (Exception $e) {
+            // Rollback transaction on error
+            mysqli_rollback($conn);
+            $errors[] = "Registration failed: " . $e->getMessage();
+            error_log('Student registration error: ' . $e->getMessage());
         }
     }
     
@@ -237,10 +290,10 @@ $formData = $_SESSION['student_form'] ?? [];
           </div>
           
           <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">Learner ID <span class="text-red-500">*</span></label>
-            <input type="text" autocomplete="off" name="learner_id" required value="<?php echo htmlspecialchars($formData['learner_id'] ?? ''); ?>" 
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Learner ID (LIN) <span class="text-red-500">*</span></label>
+            <input type="text" autocomplete="off" name="learner_id" required value="<?php echo htmlspecialchars($formData['lin'] ?? ''); ?>" 
               placeholder="e.g. LID001"
-              class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+              class="w-full  rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
           </div>
           
           <div>
@@ -303,21 +356,21 @@ $formData = $_SESSION['student_form'] ?? [];
             <label class="block text-sm font-semibold text-gray-700 mb-2">Gender</label>
             <select name="parent_gender" class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400">
               <option value="">Select gender</option>
-              <option value="Male" <?php echo ($formData['parent_gender'] ?? '') === 'Male' ? 'selected' : ''; ?>>Male</option>
-              <option value="Female" <?php echo ($formData['parent_gender'] ?? '') === 'Female' ? 'selected' : ''; ?>>Female</option>
+              <option value="MALE" <?php echo ($formData['parent_gender'] ?? '') === 'MALE' ? 'selected' : ''; ?>>Male</option>
+              <option value="FEMALE" <?php echo ($formData['parent_gender'] ?? '') === 'FEMALE' ? 'selected' : ''; ?>>Female</option>
             </select>
           </div>
           
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">Phone 1 <span class="text-red-500">*</span></label>
-            <input type="tel" autocomplete="off" name="phone_1" required value="<?php echo htmlspecialchars($formData['phone_1'] ?? ''); ?>" 
+            <input type="text" autocomplete="off" name="phone_1" required value="<?php echo htmlspecialchars($formData['phone_1'] ?? ''); ?>" 
               placeholder="+256..."
               class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
           </div>
           
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">Phone 2 (Optional)</label>
-            <input type="tel" autocomplete="off" name="phone_2" value="<?php echo htmlspecialchars($formData['phone_2'] ?? ''); ?>" 
+            <input type="text" autocomplete="off" name="phone_2" value="<?php echo htmlspecialchars($formData['phone_2'] ?? ''); ?>" 
               placeholder="+256..."
               class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
           </div>
@@ -408,8 +461,8 @@ $formData = $_SESSION['student_form'] ?? [];
             <label class="block text-sm font-semibold text-gray-700 mb-2">Enrollment Status <span class="text-red-500">*</span></label>
             <select name="entry_status" required class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400">
               <option value="">Select status</option>
-              <option value="New" <?php echo ($formData['entry_status'] ?? '') === 'New' ? 'selected' : ''; ?>>New</option>
-              <option value="Continuing" <?php echo ($formData['entry_status'] ?? '') === 'Continuing' ? 'selected' : ''; ?>>Continuing</option>
+              <option value="NEW" <?php echo ($formData['entry_status'] ?? '') === 'NEW' ? 'selected' : ''; ?>>New</option>
+              <option value="CONTINUING" <?php echo ($formData['entry_status'] ?? '') === 'CONTINUING' ? 'selected' : ''; ?>>Continuing</option>
             </select>
           </div>
           
@@ -417,8 +470,8 @@ $formData = $_SESSION['student_form'] ?? [];
             <label class="block text-sm font-semibold text-gray-700 mb-2">Residence Status <span class="text-red-500">*</span></label>
             <select name="residence_status" required class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400">
               <option value="">Select status</option>
-              <option value="Day" <?php echo ($formData['residence_status'] ?? '') === 'Day' ? 'selected' : ''; ?>>Day</option>
-              <option value="Boarding" <?php echo ($formData['residence_status'] ?? '') === 'Boarding' ? 'selected' : ''; ?>>Boarding</option>
+              <option value="DAY" <?php echo ($formData['residence_status'] ?? '') === 'DAY' ? 'selected' : ''; ?>>Day</option>
+              <option value="BOARDING" <?php echo ($formData['residence_status'] ?? '') === 'BOARDING' ? 'selected' : ''; ?>>Boarding</option>
             </select>
           </div>
         </div>
@@ -432,9 +485,9 @@ $formData = $_SESSION['student_form'] ?? [];
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-6 rounded-lg">
             <div>
               <h4 class="text-sm font-semibold text-gray-600 uppercase mb-3">Student Information</h4>
-              <div class="space-y-2 text-sm text-gray-700">
+            <div class="space-y-2 text-sm text-gray-700">
                 <p><strong>Name:</strong> <?php echo htmlspecialchars($formData['student_name'] ?? ''); ?></p>
-                <p><strong>Learner ID:</strong> <?php echo htmlspecialchars($formData['learner_id'] ?? ''); ?></p>
+                <p><strong>Learner ID (LIN):</strong> <?php echo htmlspecialchars($formData['lin'] ?? ''); ?></p>
                 <p><strong>Date of Birth:</strong> <?php echo htmlspecialchars($formData['dob'] ?? ''); ?></p>
                 <p><strong>Gender:</strong> <?php echo htmlspecialchars($formData['gender'] ?? ''); ?></p>
                 <p><strong>Nationality:</strong> <?php echo htmlspecialchars($formData['nationality'] ?? ''); ?></p>
