@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $gender             = $clean($_POST['gender']);
     $nationality        = $clean($_POST['nationality']);
     $class_id           = (int)($_POST['class'] ?? 0);
-    $stream_id          = (int)($_POST['stream'] ?? 0);
+    $stream_id          = (int)($_POST['stream'] ?? "");
     $term               = $clean($_POST['term']);
     $year_of_study      = $clean($_POST['year_of_study']);
     $residential_status = strtoupper($clean($_POST['residential_status']));
@@ -104,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // regenerate CSRF token after successful submit
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-        $_SESSION['flash_success'] = "Student <strong>$student_name</strong> registered successfully (ID: $student_id).";
+        $_SESSION['flash_success'] = "Student <strong>$student_name</strong> registered successfully.";
         header('Location: quick_reg.php');
         exit;
 
@@ -125,7 +125,7 @@ include("partials/header.php");
 <!-- Flash messages -->
 <?php if (!empty($_SESSION['flash_success'])): ?>
 <div class="w-[95%] mx-auto mt-4">
-    <div class="flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-300 text-green-800 rounded-lg">
+    <div class="flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-300 text-green-800 rounded-lg" id='success_msg'>
         <svg class="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
         </svg>
@@ -216,7 +216,7 @@ include("partials/header.php");
                         <label class="block text-sm font-medium mb-1">Stream</label>
                         <select id="streamSelect" name="stream" disabled
                                 class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-400 outline-none">
-                            <option value="" disabled selected>Select Stream</option>
+                            <option value="">Select Stream (Optional)</option>
                         </select>
                         <p id="streamLoading" class="text-xs text-gray-500 mt-1 hidden">Loading streams…</p>
                     </div>
@@ -305,6 +305,14 @@ include("partials/header.php");
 </div>
 
 <script>
+// success message disappear
+let success_msg = document.getElementById("success_msg");
+setTimeout(() => {
+    if (success_msg) {
+        success_msg.style.transition = "opacity 0.5s";
+        success_msg.style.opacity = "0";
+    }
+}, 3000);
 // ── Step navigation ──────────────────────────────────────────────
 function goToStep2() {
     const form     = document.getElementById('registrationForm');
@@ -364,7 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
     classSelect.addEventListener('change', function () {
         const classId = this.value;
 
-        streamSelect.innerHTML  = '<option value="" disabled selected>Select Stream</option>';
+        streamSelect.innerHTML  = '<option value="">Select Stream (Optional)</option>';
         streamSelect.disabled   = true;
         streamWrapper.classList.add('hidden');
 
