@@ -73,7 +73,7 @@
                 <i class="fa-solid fa-pen" aria-hidden="true"></i>
                 Quick Registration
               </a>
-              <a href="#" class="block px-2 py-2 pl-8 text-white w-full text-sm hover:bg-[#0f1b33] " role="menuitem">
+              <a href="<?php echo SITEURL ?>view_student.php" class="block px-2 py-2 pl-8 text-white w-full text-sm hover:bg-[#0f1b33] " role="menuitem">
                 <i class="fa-solid fa-eye" aria-hidden="true"></i>
                 View Students
               </a>
