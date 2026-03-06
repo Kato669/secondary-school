@@ -67,6 +67,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
         $occupation = isset($_POST['occupation']) ? trim($_POST['occupation']) : '';
         $email = isset($_POST['email']) ? trim($_POST['email']) : '';
         $parent_gender = isset($_POST['parent_gender']) ? strtoupper(trim($_POST['parent_gender'])) : '';
+        $relationship = isset($_POST['relationship']) ? trim($_POST['relationship']) : '';
         $address = isset($_POST['address']) ? trim($_POST['address']) : '';
         
         // Validate
@@ -81,6 +82,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             $_SESSION['student_form']['occupation'] = $occupation;
             $_SESSION['student_form']['email'] = $email;
             $_SESSION['student_form']['parent_gender'] = $parent_gender;
+            $_SESSION['student_form']['relationship'] = $relationship;
             $_SESSION['student_form']['address'] = $address;
             
             $currentStep = 3;
@@ -171,7 +173,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             mysqli_stmt_close($stmt);
 
             // Insert into student_parent table (parent/guardian info)
-            $pStmt = mysqli_prepare($conn, "INSERT INTO student_parent (student_id, parent_name, phone_1, phone_2, occupation, email, gender, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $pStmt = mysqli_prepare($conn, "INSERT INTO student_parent (student_id, parent_name, phone_1, phone_2, occupation, email, gender, address, relationship) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
             if(!$pStmt){
                 throw new Exception("Prepare failed: " . mysqli_error($conn));
             }
@@ -179,15 +181,18 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             $phone_2 = !empty($formData['phone_2']) ? $formData['phone_2'] : NULL;
             $email = !empty($formData['email']) ? $formData['email'] : NULL;
             
-            mysqli_stmt_bind_param($pStmt, 'isssssss',
-                $student_id,
-                $formData['parent_name'],
-                $formData['phone_1'],
-                $phone_2,
-                $formData['occupation'],
-                $email,
-                $formData['parent_gender'],
-                $formData['address']
+            $relationship_db = !empty($formData['relationship']) ? $formData['relationship'] : NULL;
+
+            mysqli_stmt_bind_param($pStmt, 'issssssss',
+              $student_id,
+              $formData['parent_name'],
+              $formData['phone_1'],
+              $phone_2,
+              $formData['occupation'],
+              $email,
+              $formData['parent_gender'],
+              $formData['address'],
+              $relationship_db
             );
 
             if(!mysqli_stmt_execute($pStmt)){
@@ -358,6 +363,16 @@ $formData = $_SESSION['student_form'] ?? [];
               <option value="">Select gender</option>
               <option value="MALE" <?php echo ($formData['parent_gender'] ?? '') === 'MALE' ? 'selected' : ''; ?>>Male</option>
               <option value="FEMALE" <?php echo ($formData['parent_gender'] ?? '') === 'FEMALE' ? 'selected' : ''; ?>>Female</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Relationship</label>
+            <select name="relationship" class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400">
+              <option value="">Select relationship</option>
+              <option value="Father" <?php echo ($formData['relationship'] ?? '') === 'Father' ? 'selected' : ''; ?>>Father</option>
+              <option value="Mother" <?php echo ($formData['relationship'] ?? '') === 'Mother' ? 'selected' : ''; ?>>Mother</option>
+              <option value="Guardian" <?php echo ($formData['relationship'] ?? '') === 'Guardian' ? 'selected' : ''; ?>>Guardian</option>
             </select>
           </div>
           

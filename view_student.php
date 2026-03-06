@@ -73,13 +73,13 @@
             <div>
                 <label class="block text-sm font-medium mb-1">Class</label>
                 <select name="class" id="classSelect"
-                        class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-teal-400 outline-none">
+                        class="w-full border rounded capitalize px-3 py-2 focus:ring-2 focus:ring-teal-400 outline-none">
                     <option value="">Select Class</option>
                     <?php
                     $classes = mysqli_query($conn, "SELECT * FROM classes ORDER BY class_id");
                     while($row = mysqli_fetch_assoc($classes)){
                         $selected = ($_GET['class'] ?? '') == $row['class_id'] ? 'selected' : '';
-                        echo "<option value='{$row['class_id']}' $selected>{$row['class_name']}</option>";
+                        echo "<option class='capitalize' value='{$row['class_id']}' $selected>{$row['class_name']}</option>";
                     }
                     ?>
                 </select>
@@ -99,7 +99,7 @@
                 <label class="block text-sm font-medium mb-1">District</label>
                 <select name="district"
                         class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-teal-400 outline-none">
-                    <option value="">Select District</option>
+                    <option value="" class="disabled selected">Select District</option>
                     <?php
                     $districts = mysqli_query($conn, "SELECT DISTINCT district FROM students ORDER BY district");
                     while($row = mysqli_fetch_assoc($districts)){
@@ -242,8 +242,14 @@
                         <td class="px-4 py-2"><?php echo htmlspecialchars($row['parent_name']); ?></td>
                         <td>
                             <a href="student_profile.php?student_id=<?php echo $row['student_id']; ?>"
-                               class="text-blue-600 hover:underline">
+                               class="text-blue-600m">
                                 <i class="fa-solid fa-eye bg-[#1d468f] p-2 rounded-full text-white"></i>
+                                <!-- <i class="fa-solid fa-book bg-[#1d468f] p-2 rounded-full text-white"></i> -->
+                            </a>
+                             <a href="student_profile.php?student_id=<?php echo $row['student_id']; ?>"
+                               class="text-blue-600m">
+                                <!-- <i class="fa-solid fa-eye bg-[#1d468f] p-2 rounded-full text-white"></i> -->
+                                <i class="fa-solid fa-book bg-[#1d468f] p-2 rounded-full text-white"></i>
                             </a>
                         </td>
                     </tr>

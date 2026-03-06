@@ -61,3 +61,10 @@
 #mainContent.expanded {
     width: calc(100% - 70px) !important;
 }
+
+/* Header navigation alignment */
+.header-nav {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
