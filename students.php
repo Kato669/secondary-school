@@ -290,7 +290,7 @@ $formData = $_SESSION['student_form'] ?? [];
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">Student Name <span class="text-red-500">*</span></label>
-            <input type="text" autocomplete="off" name="student_name" required value="<?php echo htmlspecialchars($formData['student_name'] ?? ''); ?>" 
+            <input type="text capitalize" autocomplete="off" name="student_name" required value="<?php echo htmlspecialchars($formData['student_name'] ?? ''); ?>" 
               class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
           </div>
           
@@ -321,13 +321,13 @@ $formData = $_SESSION['student_form'] ?? [];
             <label class="block text-sm font-semibold text-gray-700 mb-2">Nationality <span class="text-red-500">*</span></label>
             <input type="text" autocomplete="off" name="nationality" required value="<?php echo htmlspecialchars($formData['nationality'] ?? ''); ?>" 
               placeholder="e.g. Ugandan"
-              class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+              class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 capitalize"/>
           </div>
           
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">District <span class="text-red-500">*</span></label>
             <input autocomplete="off" type="text" name="district" required value="<?php echo htmlspecialchars($formData['district'] ?? ''); ?>" 
-              class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+              class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 capitalize"/>
           </div>
           
           <div>
