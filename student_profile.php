@@ -20,6 +20,19 @@ $result = mysqli_stmt_get_result($stmt);
 $student = mysqli_fetch_assoc($result);
 mysqli_stmt_close($stmt);
 
+// Determine profile image (use default if missing)
+$profileImage = 'images/students/profil.png';
+if (!empty($student['student_image'])) {
+    $candidate = $student['student_image'];
+    $candidatePath = $candidate;
+    if (!str_starts_with($candidatePath, '/')) {
+        $candidatePath = __DIR__ . '/' . ltrim($candidatePath, '/');
+    }
+    if (file_exists($candidatePath)) {
+        $profileImage = $student['student_image'];
+    }
+}
+
 // fetch class/stream names for display
 $class_name = '';
 $stream_name = '';
@@ -79,7 +92,7 @@ if (!$student) {
          <!-- image section -->
         <div class="container-image flex flex-row justify-between p-3 align-items-center">
             <div class="w-1/2">
-                <img class="img-fluid border rounded " src="https://images.unsplash.com/photo-1659444003277-6cb0a5ffc8bd?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YmxhY2slMjBnZW50bGVtYW4lMjBpbiUyMHN1aXR8ZW58MHx8MHx8fDA%3D" alt="" srcset="" style="height: 200px; width: 200px; border-radius: 10%; object-fit: cover;"> 
+                <img class="img-fluid border rounded" src="<?php echo htmlspecialchars($profileImage); ?>" alt="Student photo" style="height: 200px; width: 200px; border-radius: 10%; object-fit: cover;">
             </div>
             <div class="w-1/2">
                <hr class="border-white-700 my-3">
@@ -144,7 +157,7 @@ if (!$student) {
                     </div>
                     <div class="flex flex-row justify-between">
                         <span class="font-bold uppercase text-gray-700">Email:</span>
-                        <span class="text-gray-600 capitalize"><?php echo htmlspecialchars($student['parent_email'] ?? ''); ?></span>
+                        <span class="text-gray-600"><?php echo htmlspecialchars($student['parent_email'] ?? ''); ?></span>
                     </div>
                     <div class="flex flex-row justify-between">
                         <span class="font-bold uppercase text-gray-700">gender:</span>

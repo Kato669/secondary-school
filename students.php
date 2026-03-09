@@ -42,20 +42,50 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             $_SESSION['student_form']['district'] = $district;
             $_SESSION['student_form']['entry_date'] = $entry_date;
             
-            // Handle image upload
-            if(isset($_FILES['student_image']) && $_FILES['student_image']['error'] === 0){
-                $uploadDir = "./images/students/";
-                if(!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
-                
-                $fileName = time() . '_' . basename($_FILES['student_image']['name']);
-                $uploadPath = $uploadDir . $fileName;
-                
-                if(move_uploaded_file($_FILES['student_image']['tmp_name'], $uploadPath)){
-                    $_SESSION['student_form']['student_image'] = $fileName;
+            // Handle image upload (optional)
+            if(isset($_FILES['student_image']) && $_FILES['student_image']['error'] !== UPLOAD_ERR_NO_FILE){
+                if($_FILES['student_image']['error'] !== UPLOAD_ERR_OK){
+                    $errors[] = "Error uploading image. Please try again.";
+                } else {
+                    $allowedExts = ['jpg', 'jpeg', 'png'];
+                    $allowedMimes = ['image/jpeg', 'image/png'];
+                    $fileInfo = pathinfo($_FILES['student_image']['name']);
+                    $fileExt = isset($fileInfo['extension']) ? strtolower($fileInfo['extension']) : '';
+                    $fileMime = mime_content_type($_FILES['student_image']['tmp_name']);
+
+                    if(!in_array($fileExt, $allowedExts) || !in_array($fileMime, $allowedMimes)){
+                        $errors[] = "Student photo must be a JPG, JPEG, or PNG image.";
+                    } else {
+                        $uploadDir = __DIR__ . "/images/students/";
+                        if(!is_dir($uploadDir)){
+                            if(!mkdir($uploadDir, 0755, true)){
+                                $errors[] = "Failed to create upload folder (images/students). Check server permissions.";
+                            }
+                        }
+
+                        if(empty($errors) && !is_writable($uploadDir)){
+                            $errors[] = "Upload folder is not writable. Please check permissions on images/students.";
+                        }
+
+                        if(empty($errors)){
+                            $fileName = time() . '_' . bin2hex(random_bytes(5)) . '.' . $fileExt;
+                            $uploadPath = $uploadDir . $fileName;
+
+                            if(is_uploaded_file($_FILES['student_image']['tmp_name']) && move_uploaded_file($_FILES['student_image']['tmp_name'], $uploadPath)){
+                                // Store a web-accessible path in the database (relative to the project root)
+                                $_SESSION['student_form']['student_image'] = "images/students/" . $fileName;
+                            } else {
+                                $errors[] = "Failed to save uploaded image. Check folder permissions.";
+                                error_log('Image upload failed: ' . var_export($_FILES['student_image'], true));
+                            }
+                        }
+                    }
                 }
             }
-            
-            $currentStep = 2;
+
+            if(empty($errors)){
+                $currentStep = 2;
+            }
         }
     }
     
@@ -114,8 +144,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
                 if(!$classCheck || mysqli_num_rows($classCheck) === 0){
                     $errors[] = "Invalid class selected.";
                 } elseif($stream_id > 0) {
-                    // Validate stream exists if provided
-                    $streamCheck = mysqli_query($conn, "SELECT stream_id FROM streams WHERE stream_id = $stream_id");
+                    // Validate stream exists and is attached to the selected class
+                    $streamCheck = mysqli_query($conn, "SELECT stream_id FROM streams WHERE stream_id = $stream_id AND class_id = $class_id");
                     if(!$streamCheck || mysqli_num_rows($streamCheck) === 0){
                         $errors[] = "Invalid stream selected.";
                     }
@@ -290,15 +320,15 @@ $formData = $_SESSION['student_form'] ?? [];
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">Student Name <span class="text-red-500">*</span></label>
-            <input type="text capitalize" autocomplete="off" name="student_name" required value="<?php echo htmlspecialchars($formData['student_name'] ?? ''); ?>" 
-              class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+            <input type="text" autocomplete="off" name="student_name" required value="<?php echo htmlspecialchars($formData['student_name'] ?? ''); ?>" 
+              class="w-full capitalize rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
           </div>
           
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">Learner ID (LIN) <span class="text-red-500">*</span></label>
             <input type="text" autocomplete="off" name="learner_id" required value="<?php echo htmlspecialchars($formData['lin'] ?? ''); ?>" 
               placeholder="e.g. LID001"
-              class="w-full  rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
+              class="w-full uppercase rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
           </div>
           
           <div>
@@ -338,7 +368,7 @@ $formData = $_SESSION['student_form'] ?? [];
           
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">Student Photo</label>
-            <input type="file" name="student_image" accept="image/*" 
+            <input type="file" name="student_image" accept=".jpg,.jpeg,.png" 
               class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"/>
           </div>
         </div>
@@ -419,7 +449,7 @@ $formData = $_SESSION['student_form'] ?? [];
           
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">Class <span class="text-red-500">*</span></label>
-            <select name="class_id" required class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400">
+            <select id="classSelect" name="class_id" required class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400">
               <option value="">Select class</option>
               <?php
                 $classRes = mysqli_query($conn, "SELECT class_id, class_name FROM classes ORDER BY class_name");
@@ -435,10 +465,19 @@ $formData = $_SESSION['student_form'] ?? [];
           
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">Stream</label>
-            <select name="stream_id" class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400">
+            <select id="streamSelect" name="stream_id" class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400">
               <option value="">Select stream (optional)</option>
               <?php
-                $streamRes = mysqli_query($conn, "SELECT stream_id, stream_name FROM streams ORDER BY stream_name");
+                $selectedClass = isset($formData['class_id']) ? intval($formData['class_id']) : 0;
+                $streamQuery = "SELECT stream_id, stream_name FROM streams";
+                if($selectedClass > 0){
+                  $streamQuery .= " WHERE class_id = $selectedClass";
+                } else {
+                  // No class selected yet; do not show any streams
+                  $streamQuery .= " WHERE 1=0";
+                }
+                $streamQuery .= " ORDER BY stream_name";
+                $streamRes = mysqli_query($conn, $streamQuery);
                 if($streamRes){
                   while($row = mysqli_fetch_assoc($streamRes)){
                     $selected = ($formData['stream_id'] ?? '') == $row['stream_id'] ? 'selected' : '';
@@ -566,6 +605,48 @@ $formData = $_SESSION['student_form'] ?? [];
     </form>
   </div>
 </div>
+
+<script>
+(function(){
+  const classSelect = document.getElementById('classSelect');
+  const streamSelect = document.getElementById('streamSelect');
+
+  if(!classSelect || !streamSelect) return;
+
+  const selectedStreamId = streamSelect.value;
+
+  const loadStreams = (classId) => {
+    // Reset stream options
+    streamSelect.innerHTML = '<option value="">Select stream (optional)</option>';
+
+    if(!classId) return;
+
+    fetch(`get-streams.php?class_id=${encodeURIComponent(classId)}`)
+      .then(res => res.text())
+      .then(html => {
+        if(!html) return;
+        streamSelect.insertAdjacentHTML('beforeend', html);
+
+        if(selectedStreamId){
+          const preselected = streamSelect.querySelector(`option[value="${selectedStreamId}"]`);
+          if(preselected) preselected.selected = true;
+        }
+      })
+      .catch(() => {
+        // ignore errors
+      });
+  };
+
+  classSelect.addEventListener('change', () => {
+    loadStreams(classSelect.value);
+  });
+
+  // Ensure streams are loaded when the page first loads with a selected class
+  if(classSelect.value){
+    loadStreams(classSelect.value);
+  }
+})();
+</script>
 
 <?php 
 // Helper function for escaping output

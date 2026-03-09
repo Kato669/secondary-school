@@ -58,7 +58,7 @@
             <div>
                 <label class="block text-sm font-medium mb-1">Term</label>
                 <select name="term" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-teal-400 outline-none">
-                    <option value="">Select</option>
+                    <option value="" class="selected disabled">Select</option>
                     <?php
                     $terms = ["Term 1","Term 2","Term 3"];
                     foreach($terms as $term){
@@ -74,7 +74,7 @@
                 <label class="block text-sm font-medium mb-1">Class</label>
                 <select name="class" id="classSelect"
                         class="w-full border rounded capitalize px-3 py-2 focus:ring-2 focus:ring-teal-400 outline-none">
-                    <option value="">Select Class</option>
+                    <option value="" class="selected disabled">Select Class</option>
                     <?php
                     $classes = mysqli_query($conn, "SELECT * FROM classes ORDER BY class_id");
                     while($row = mysqli_fetch_assoc($classes)){
@@ -90,7 +90,7 @@
                 <label class="block text-sm font-medium mb-1">Stream</label>
                 <select name="stream" id="streamSelect"
                         class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-teal-400 outline-none">
-                    <option value="">Select Stream</option>
+                    <option value="" class="selected disabled">Select Stream</option>
                 </select>
             </div>
 
@@ -232,14 +232,14 @@
                     ?>
                     <tr>
                         <td class="px-4 py-2"><?php echo $i+1; ?></td>
-                        <td class="px-4 py-2"><?php echo htmlspecialchars($row['lin']); ?></td>
-                        <td class="px-4 py-2"><?php echo htmlspecialchars($row['student_name']); ?></td>
-                        <td class="px-4 py-2"><?php echo htmlspecialchars($row['class_name']); ?></td>
+                        <td class="px-4 py-2 uppercase"><?php echo htmlspecialchars($row['lin']); ?></td>
+                        <td class="px-4 py-2 capitalize"><?php echo htmlspecialchars($row['student_name']); ?></td>
+                        <td class="px-4 py-2 capitalize"><?php echo htmlspecialchars($row['class_name']); ?></td>
                         <td class="px-4 py-2"><?php echo htmlspecialchars($row['residence_status']); ?></td>
                         <td class="px-4 py-2"><?php echo htmlspecialchars($row['gender']); ?></td>
                         <td class="px-4 py-2"><?php echo $age; ?></td>
-                        <td class="px-4 py-2"><?php echo htmlspecialchars($row['district']); ?></td>
-                        <td class="px-4 py-2"><?php echo htmlspecialchars($row['parent_name']); ?></td>
+                        <td class="px-4 py-2 capitalize"><?php echo htmlspecialchars($row['district']); ?></td>
+                        <td class="px-4 py-2 capitalize"><?php echo htmlspecialchars($row['parent_name']); ?></td>
                         <td>
                             <a href="student_profile.php?student_id=<?php echo $row['student_id']; ?>"
                                class="text-blue-600m">
