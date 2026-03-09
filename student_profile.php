@@ -8,6 +8,64 @@ if (!$student_id) {
     exit();
 }
 
+$updateErrors = [];
+$updateSuccess = '';
+
+// Handle bio updates
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bio'])) {
+    $postedId = filter_input(INPUT_POST, 'student_id', FILTER_VALIDATE_INT);
+    if ($postedId === $student_id) {
+        $student_name = trim($_POST['student_name'] ?? '');
+        $nationality = trim($_POST['nationality'] ?? '');
+        $address = trim($_POST['address'] ?? '');
+        $class_id = filter_input(INPUT_POST, 'class_id', FILTER_VALIDATE_INT);
+        $stream_id = filter_input(INPUT_POST, 'stream_id', FILTER_VALIDATE_INT);
+
+        if ($student_name === '') {
+            $updateErrors[] = 'Student name is required.';
+        }
+        if ($nationality === '') {
+            $updateErrors[] = 'Nationality is required.';
+        }
+        if ($address === '') {
+            $updateErrors[] = 'Address is required.';
+        }
+        if (!$class_id || $class_id <= 0) {
+            $updateErrors[] = 'Please select a class.';
+        }
+
+        if (empty($updateErrors)) {
+            // Update students table
+            $stmt = mysqli_prepare($conn, "UPDATE students SET student_name = ?, nationality = ? WHERE student_id = ?");
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 'ssi', $student_name, $nationality, $student_id);
+                mysqli_stmt_execute($stmt);
+                mysqli_stmt_close($stmt);
+            }
+
+            // Update parent address
+            $pStmt = mysqli_prepare($conn, "UPDATE student_parent SET address = ? WHERE student_id = ?");
+            if ($pStmt) {
+                mysqli_stmt_bind_param($pStmt, 'si', $address, $student_id);
+                mysqli_stmt_execute($pStmt);
+                mysqli_stmt_close($pStmt);
+            }
+
+            // Update academic info
+            $aStmt = mysqli_prepare($conn, "UPDATE student_additional_info SET class_id = ?, stream_id = ? WHERE student_id = ?");
+            if ($aStmt) {
+                $streamVal = ($stream_id && $stream_id > 0) ? $stream_id : null;
+                mysqli_stmt_bind_param($aStmt, 'iii', $class_id, $streamVal, $student_id);
+                mysqli_stmt_execute($aStmt);
+                mysqli_stmt_close($aStmt);
+            }
+
+            header('Location: ' . SITEURL . 'student_profile.php?student_id=' . $student_id . '&updated=1');
+            
+        }
+    }
+}
+
 // fetch student and related info safely
 $stmt = mysqli_prepare($conn, "SELECT s.*, p.parent_name, p.phone_1, p.email AS parent_email, p.address AS parent_address, p.gender AS parent_gender, p.relationship AS relationship, sai.class_id, sai.stream_id, sai.term, sai.year_of_study, sai.entry_status, sai.residence_status, sai.school_pay FROM students s LEFT JOIN student_parent p ON s.student_id = p.student_id LEFT JOIN student_additional_info sai ON s.student_id = sai.student_id WHERE s.student_id = ? LIMIT 1");
 if (!$stmt) {
@@ -57,6 +115,25 @@ if (!$student) {
     header("Location:".SITEURL."view_student.php");
     exit();
 }
+
+$updateSuccess = isset($_GET['updated']) ? 'Student info updated successfully.' : '';
+
+// Fetch list of classes and streams for the edit form
+$classes = [];
+$streamsByClass = [];
+$classRes = mysqli_query($conn, "SELECT class_id, class_name FROM classes ORDER BY class_name");
+if ($classRes) {
+    while ($row = mysqli_fetch_assoc($classRes)) {
+        $classes[] = $row;
+    }
+}
+$streamRes = mysqli_query($conn, "SELECT stream_id, stream_name, class_id FROM streams ORDER BY stream_name");
+if ($streamRes) {
+    while ($row = mysqli_fetch_assoc($streamRes)) {
+        $streamsByClass[$row['class_id']][] = $row;
+    }
+}
+
 ?>
 <div class="container m-3 p-3">
     <!-- headers -->
@@ -95,20 +172,99 @@ if (!$student) {
                 <img class="img-fluid border rounded" src="<?php echo htmlspecialchars($profileImage); ?>" alt="Student photo" style="height: 200px; width: 200px; border-radius: 10%; object-fit: cover;">
             </div>
             <div class="w-1/2">
+               <?php if($updateSuccess): ?>
+                   <div class="bg-green-100 text-green-700 p-3 rounded mb-4">
+                       <?php echo htmlspecialchars($updateSuccess); ?>
+                   </div>
+               <?php endif; ?>
                <hr class="border-white-700 my-3">
                <div class="flex justify-between align-items-center">
                     <div class="uppercase text-blue-900">
                         Student biodata
                     </div>
                     <div class="edit-btn">
-                        <a href="" class="text-sm uppercase text-[#ffffff] bg-blue-900 px-3 py-2 my-3 mx-1 hover:bg-blue-800">
+                        <button type="button" id="editBioBtn" class="text-sm uppercase text-[#ffffff] bg-blue-900 px-3 py-2 my-3 mx-1 hover:bg-blue-800">
                             <i class="fa-solid fa-pen-to-square"></i>
                             edit info
-                        </a>
+                        </button>
                     </div>
                 </div>
                <hr class="border-white-700 my-3">
-                <div class="flex flex-col gap-2">
+
+               <!-- Edit modal -->
+               <style>
+                 /* Modal animation */
+                 #editBioModal {
+                   opacity: 0;
+                   transform: translateY(-15px);
+                   transition: opacity 220ms ease, transform 220ms ease;
+                 }
+                 #editBioModal.modal-open {
+                   opacity: 1;
+                   transform: translateY(0);
+                 }
+                 #editBioModal.modal-closing {
+                   opacity: 0;
+                   transform: translateY(-15px);
+                 }
+               </style>
+
+               <div id="editBioModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+                 <div class="bg-white rounded-lg w-full max-w-lg p-6 relative">
+                   <button id="closeEditBio" type="button" class="absolute top-3 right-3 text-gray-600 hover:text-gray-900">&times;</button>
+                   <h3 class="text-lg font-semibold mb-4">Update Student Info</h3>
+                   <?php if(!empty($updateErrors)): ?>
+                     <div class="bg-red-100 text-red-700 p-3 rounded mb-4">
+                       <ul class="list-disc list-inside">
+                         <?php foreach($updateErrors as $updateError): ?>
+                           <li><?php echo htmlspecialchars($updateError); ?></li>
+                         <?php endforeach; ?>
+                       </ul>
+                     </div>
+                   <?php endif; ?>
+                   <form method="POST" id="editBioForm">
+                     <input type="hidden" name="update_bio" value="1">
+                     <input type="hidden" name="student_id" value="<?php echo (int) $student_id; ?>">
+
+                     <div class="grid grid-cols-1 gap-4">
+                       <div>
+                         <label class="block text-sm font-semibold">Full name</label>
+                         <input name="student_name" required value="<?php echo htmlspecialchars($student['student_name'] ?? ''); ?>" class="w-full rounded border-gray-300 px-3 py-2" />
+                       </div>
+                       <div>
+                         <label class="block text-sm font-semibold">Nationality</label>
+                         <input name="nationality" required value="<?php echo htmlspecialchars($student['nationality'] ?? ''); ?>" class="w-full rounded border-gray-300 px-3 py-2" />
+                       </div>
+                       <div>
+                         <label class="block text-sm font-semibold">Address</label>
+                         <textarea name="address" required class="w-full rounded border-gray-300 px-3 py-2"><?php echo htmlspecialchars($student['parent_address'] ?? ''); ?></textarea>
+                       </div>
+                       <div>
+                         <label class="block text-sm font-semibold">Class</label>
+                         <select name="class_id" id="editClassSelect" required class="w-full rounded border-gray-300 px-3 py-2">
+                           <option value="">Select class</option>
+                           <?php foreach($classes as $class): ?>
+                             <option value="<?php echo (int)$class['class_id']; ?>" <?php echo ((int)$student['class_id'] === (int)$class['class_id']) ? 'selected' : ''; ?>><?php echo htmlspecialchars($class['class_name']); ?></option>
+                           <?php endforeach; ?>
+                         </select>
+                       </div>
+                       <div>
+                         <label class="block text-sm font-semibold">Stream</label>
+                         <select name="stream_id" id="editStreamSelect" class="w-full rounded border-gray-300 px-3 py-2">
+                           <option value="">Select stream (optional)</option>
+                         </select>
+                       </div>
+                     </div>
+
+                     <div class="mt-5 flex justify-end gap-2">
+                       <button type="button" id="cancelEditBio" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Cancel</button>
+                       <button type="submit" class="px-4 py-2 bg-blue-900 text-white rounded hover:bg-blue-800">Save</button>
+                     </div>
+                   </form>
+                 </div>
+               </div>
+
+               <div class="flex flex-col gap-2">
                         <div class="flex flex-row gap-2 justify-between">
                             <div class="font-bold text-black-500 capitalize">Full name:</div>
                             <div class="capitalize text-black-500"><?php echo htmlspecialchars($student['student_name'] ?? ''); ?></div>
@@ -210,4 +366,62 @@ if (!$student) {
     </div>
     
 </div>
+<script>
+(function(){
+  const modal = document.getElementById('editBioModal');
+  const editBtn = document.getElementById('editBioBtn');
+  const closeBtn = document.getElementById('closeEditBio');
+  const cancelBtn = document.getElementById('cancelEditBio');
+  const classSelect = document.getElementById('editClassSelect');
+  const streamSelect = document.getElementById('editStreamSelect');
+
+  const streamsByClass = <?php echo json_encode($streamsByClass); ?>;
+
+  function populateStreams(classId, selectedStream) {
+    streamSelect.innerHTML = '<option value="">Select stream (optional)</option>';
+    if (!classId) return;
+    const streams = streamsByClass[classId] || [];
+    streams.forEach(stream => {
+      const opt = document.createElement('option');
+      opt.value = stream.stream_id;
+      opt.textContent = stream.stream_name;
+      if (selectedStream && parseInt(selectedStream, 10) === parseInt(stream.stream_id, 10)) {
+        opt.selected = true;
+      }
+      streamSelect.appendChild(opt);
+    });
+  }
+
+  function openModal() {
+    modal.classList.remove('hidden');
+    // Force reflow for transition to work
+    void modal.offsetWidth;
+    modal.classList.add('modal-open');
+
+    const selectedClass = classSelect.value;
+    const selectedStream = <?php echo json_encode($student['stream_id'] ?? ''); ?>;
+    populateStreams(selectedClass, selectedStream);
+  }
+
+  function closeModal() {
+    modal.classList.remove('modal-open');
+    modal.classList.add('modal-closing');
+
+    modal.addEventListener('transitionend', function handler() {
+      modal.classList.add('hidden');
+      modal.classList.remove('modal-closing');
+      modal.removeEventListener('transitionend', handler);
+    });
+  }
+
+  editBtn?.addEventListener('click', openModal);
+  closeBtn?.addEventListener('click', closeModal);
+  cancelBtn?.addEventListener('click', closeModal);
+
+  classSelect?.addEventListener('change', function() {
+    populateStreams(this.value, '');
+  });
+})();
+</script>
+
 <?php include("partials/footer.php") ?>
