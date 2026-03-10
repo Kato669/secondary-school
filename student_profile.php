@@ -11,6 +11,9 @@ if (!$student_id) {
 $updateErrors = [];
 $updateSuccess = '';
 
+$parentUpdateErrors = [];
+$parentUpdateSuccess = '';
+
 // Handle bio updates
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bio'])) {
     $postedId = filter_input(INPUT_POST, 'student_id', FILTER_VALIDATE_INT);
@@ -61,7 +64,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_bio'])) {
             }
 
             header('Location: ' . SITEURL . 'student_profile.php?student_id=' . $student_id . '&updated=1');
-            
+            exit();
+        }
+    }
+}
+
+// Handle parent updates
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_parent'])) {
+    $postedId = filter_input(INPUT_POST, 'student_id', FILTER_VALIDATE_INT);
+    if ($postedId === $student_id) {
+        $parent_name = trim($_POST['parent_name'] ?? '');
+        $parent_gender = trim($_POST['parent_gender'] ?? '');
+        $phone_1 = trim($_POST['phone_1'] ?? '');
+        $phone_2 = trim($_POST['phone_2'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $relationship = trim($_POST['relationship'] ?? '');
+
+        if ($parent_name === '') {
+            $parentUpdateErrors[] = 'Parent name is required.';
+        }
+        if ($phone_1 === '') {
+            $parentUpdateErrors[] = 'Primary contact is required.';
+        }
+
+        if (empty($parentUpdateErrors)) {
+            $pStmt = mysqli_prepare($conn, "UPDATE student_parent SET parent_name = ?, gender = ?, phone_1 = ?, phone_2 = ?, email = ?, relationship = ? WHERE student_id = ?");
+            if ($pStmt) {
+                mysqli_stmt_bind_param($pStmt, 'ssssssi', $parent_name, $parent_gender, $phone_1, $phone_2, $email, $relationship, $student_id);
+                mysqli_stmt_execute($pStmt);
+                mysqli_stmt_close($pStmt);
+            }
+
+            header('Location: ' . SITEURL . 'student_profile.php?student_id=' . $student_id . '&updated_parent=1');
+            // exit();
         }
     }
 }
@@ -117,6 +152,7 @@ if (!$student) {
 }
 
 $updateSuccess = isset($_GET['updated']) ? 'Student info updated successfully.' : '';
+$parentUpdateSuccess = isset($_GET['updated_parent']) ? 'Parent info updated successfully.' : '';
 
 // Fetch list of classes and streams for the edit form
 $classes = [];
@@ -177,33 +213,41 @@ if ($streamRes) {
                        <?php echo htmlspecialchars($updateSuccess); ?>
                    </div>
                <?php endif; ?>
-               <hr class="border-white-700 my-3">
+               <?php if($parentUpdateSuccess): ?>
+                   <div class="bg-green-100 text-green-700 p-3 rounded mb-4">
+                       <?php echo htmlspecialchars($parentUpdateSuccess); ?>
+                   </div>
+               <?php endif; ?>
+               <hr class="border-white-700 my-1">
                <div class="flex justify-between align-items-center">
-                    <div class="uppercase text-blue-900">
+                    <div class="uppercase text-blue-900 text-sm">
                         Student biodata
                     </div>
                     <div class="edit-btn">
-                        <button type="button" id="editBioBtn" class="text-sm uppercase text-[#ffffff] bg-blue-900 px-3 py-2 my-3 mx-1 hover:bg-blue-800">
+                        <button type="button" id="editBioBtn" class="text-sm uppercase text-[#ffffff] bg-blue-900 px-3 py-1 mx-1 hover:bg-blue-800">
                             <i class="fa-solid fa-pen-to-square"></i>
                             edit info
                         </button>
                     </div>
                 </div>
-               <hr class="border-white-700 my-3">
+               <hr class="border-white-700 my-1">
 
                <!-- Edit modal -->
                <style>
                  /* Modal animation */
-                 #editBioModal {
+                 #editBioModal,
+                 #editParentModal {
                    opacity: 0;
                    transform: translateY(-15px);
                    transition: opacity 220ms ease, transform 220ms ease;
                  }
-                 #editBioModal.modal-open {
+                 #editBioModal.modal-open,
+                 #editParentModal.modal-open {
                    opacity: 1;
                    transform: translateY(0);
                  }
-                 #editBioModal.modal-closing {
+                 #editBioModal.modal-closing,
+                 #editParentModal.modal-closing {
                    opacity: 0;
                    transform: translateY(-15px);
                  }
@@ -264,6 +308,63 @@ if ($streamRes) {
                  </div>
                </div>
 
+               <!-- Parent edit modal -->
+               <div id="editParentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+                 <div class="bg-white rounded-lg w-full max-w-lg p-6 relative">
+                   <button id="closeEditParent" type="button" class="absolute top-3 right-3 text-gray-600 hover:text-gray-900">&times;</button>
+                   <h3 class="text-lg font-semibold mb-4">Update Parent/Guardian Info</h3>
+                   <?php if(!empty($parentUpdateErrors)): ?>
+                     <div class="bg-red-100 text-red-700 p-3 rounded mb-4">
+                       <ul class="list-disc list-inside">
+                         <?php foreach($parentUpdateErrors as $parentError): ?>
+                           <li><?php echo htmlspecialchars($parentError); ?></li>
+                         <?php endforeach; ?>
+                       </ul>
+                     </div>
+                   <?php endif; ?>
+                   <form method="POST" id="editParentForm">
+                     <input type="hidden" name="update_parent" value="1">
+                     <input type="hidden" name="student_id" value="<?php echo (int) $student_id; ?>">
+
+                     <div class="grid grid-cols-1 gap-4">
+                       <div>
+                         <label class="block text-sm font-semibold">Parent name</label>
+                         <input name="parent_name" required value="<?php echo htmlspecialchars($student['parent_name'] ?? ''); ?>" class="w-full rounded border-gray-300 px-3 py-2" />
+                       </div>
+                       <div>
+                         <label class="block text-sm font-semibold">Gender</label>
+                         <select name="parent_gender" class="w-full rounded border-gray-300 px-3 py-2">
+                           <option value="">Select gender</option>
+                           <option value="MALE" <?php echo (strtoupper($student['parent_gender'] ?? '') === 'MALE') ? 'selected' : ''; ?>>Male</option>
+                           <option value="FEMALE" <?php echo (strtoupper($student['parent_gender'] ?? '') === 'FEMALE') ? 'selected' : ''; ?>>Female</option>
+                         </select>
+                       </div>
+                       <div>
+                         <label class="block text-sm font-semibold">Contact 1</label>
+                         <input name="phone_1" required value="<?php echo htmlspecialchars($student['phone_1'] ?? ''); ?>" class="w-full rounded border-gray-300 px-3 py-2" />
+                       </div>
+                       <div>
+                         <label class="block text-sm font-semibold">Contact 2</label>
+                         <input name="phone_2" value="<?php echo htmlspecialchars($student['phone_2'] ?? ''); ?>" class="w-full rounded border-gray-300 px-3 py-2" />
+                       </div>
+                       <div>
+                         <label class="block text-sm font-semibold">Email</label>
+                         <input type="email" name="email" value="<?php echo htmlspecialchars($student['parent_email'] ?? ''); ?>" class="w-full rounded border-gray-300 px-3 py-2" />
+                       </div>
+                       <div>
+                         <label class="block text-sm font-semibold">Relationship</label>
+                         <input name="relationship" value="<?php echo htmlspecialchars($student['relationship'] ?? ''); ?>" class="w-full rounded border-gray-300 px-3 py-2" />
+                       </div>
+                     </div>
+
+                     <div class="mt-5 flex justify-end gap-2">
+                       <button type="button" id="cancelEditParent" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Cancel</button>
+                       <button type="submit" class="px-4 py-2 bg-blue-900 text-white rounded hover:bg-blue-800">Save</button>
+                     </div>
+                   </form>
+                 </div>
+               </div>
+
                <div class="flex flex-col gap-2">
                         <div class="flex flex-row gap-2 justify-between">
                             <div class="font-bold text-black-500 capitalize">Full name:</div>
@@ -293,15 +394,15 @@ if ($streamRes) {
          <h1 class="uppercase text-center py-5 text-2xl font-bold">more information</h1>
         <div class="flex flex-row justify-between p-3 gap-6">
             <div class="w-1/2">
-                <hr class="border-gray-300 my-3">
-                <div class="flex flex-row items-center justify-between mb-3">
+                <hr class="border-gray-300 my-1">
+                <div class="flex flex-row items-center justify-between mb-1">
                     <h3 class="uppercase text-blue-900 font-semibold">Parent/Guardian Information</h3>
-                    <a href="" class="text-sm uppercase text-white bg-blue-900 px-3 py-2 hover:bg-blue-800 rounded transition">
+                    <button type="button" id="editParentBtn" class="text-sm uppercase text-white bg-blue-900 px-3 py-1 hover:bg-blue-800 rounded transition">
                         <i class="fa-solid fa-pen-to-square"></i>
                         edit info
-                    </a>
+                    </button>
                 </div>
-                <hr class="border-gray-300 my-3">
+                <hr class="border-gray-300 my-1">
                 <div class="flex flex-col gap-2">
                     <div class="flex flex-row justify-between">
                         <span class="font-bold uppercase text-gray-700">Parent Name:</span>
@@ -310,6 +411,10 @@ if ($streamRes) {
                     <div class="flex flex-row justify-between">
                         <span class="font-bold uppercase text-gray-700">Contact:</span>
                         <span class="text-gray-600"><?php echo htmlspecialchars($student['phone_1'] ?? ''); ?></span>
+                    </div>
+                    <div class="flex flex-row justify-between">
+                        <span class="font-bold uppercase text-gray-700">Contact 2:</span>
+                        <span class="text-gray-600"><?php echo htmlspecialchars($student['phone_2'] ?? ''); ?></span>
                     </div>
                     <div class="flex flex-row justify-between">
                         <span class="font-bold uppercase text-gray-700">Email:</span>
@@ -331,11 +436,11 @@ if ($streamRes) {
                 </div>
             </div>
             <div class="w-1/2">
-                <hr class="border-gray-300 my-3">
-                <div class="flex flex-row items-center justify-between mb-3">
+                <hr class="border-gray-300 my-1">
+                <div class="flex flex-row items-center justify-between mb-1">
                     <h3 class="uppercase text-blue-900 font-semibold">Academic Information</h3>
                 </div>
-                <hr class="border-gray-300 my-3">
+                <hr class="border-gray-300 my-1">
                 <div class="flex flex-col gap-2">
                     <div class="flex flex-row justify-between">
                         <span class="font-bold uppercase text-gray-700">Class:</span>
@@ -374,6 +479,11 @@ if ($streamRes) {
   const cancelBtn = document.getElementById('cancelEditBio');
   const classSelect = document.getElementById('editClassSelect');
   const streamSelect = document.getElementById('editStreamSelect');
+
+  const parentModal = document.getElementById('editParentModal');
+  const editParentBtn = document.getElementById('editParentBtn');
+  const closeParentBtn = document.getElementById('closeEditParent');
+  const cancelParentBtn = document.getElementById('cancelEditParent');
 
   const streamsByClass = <?php echo json_encode($streamsByClass); ?>;
 
@@ -418,9 +528,30 @@ if ($streamRes) {
   closeBtn?.addEventListener('click', closeModal);
   cancelBtn?.addEventListener('click', closeModal);
 
+  editParentBtn?.addEventListener('click', openParentModal);
+  closeParentBtn?.addEventListener('click', closeParentModal);
+  cancelParentBtn?.addEventListener('click', closeParentModal);
+
   classSelect?.addEventListener('change', function() {
     populateStreams(this.value, '');
   });
+
+  function openParentModal() {
+    parentModal.classList.remove('hidden');
+    void parentModal.offsetWidth;
+    parentModal.classList.add('modal-open');
+  }
+
+  function closeParentModal() {
+    parentModal.classList.remove('modal-open');
+    parentModal.classList.add('modal-closing');
+
+    parentModal.addEventListener('transitionend', function handler() {
+      parentModal.classList.add('hidden');
+      parentModal.classList.remove('modal-closing');
+      parentModal.removeEventListener('transitionend', handler);
+    });
+  }
 })();
 </script>
 
